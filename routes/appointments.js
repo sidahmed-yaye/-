@@ -1,6 +1,8 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { validateMauritanianPhone, formatFriendly } = require('../utils');
+const { sendWhatsAppMessage } = require('../services/whatsapp');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -20,7 +22,11 @@ router.post('/', (req, res) => {
   if (!patientName || !patientPhone || !time) {
     return res.status(400).json({ error: 'اسم المريض، الهاتف، والوقت مطلوبة' });
   }
-  const patient = db.findOrCreatePatient(req.clinicId, { name: patientName, phone: patientPhone });
+  const validPhone = validateMauritanianPhone(patientPhone);
+  if (!validPhone) {
+    return res.status(400).json({ error: 'رقم الهاتف يجب أن يكون رقماً موريتانياً صحيحاً (8 أرقام تبدأ بـ 2 أو 3 أو 4)' });
+  }
+  const patient = db.findOrCreatePatient(req.clinicId, { name: patientName, phone: validPhone });
   const appt = db.createAppointment({
     clinicId: req.clinicId,
     patientId: patient.id,
@@ -30,8 +36,22 @@ router.post('/', (req, res) => {
     status: 'confirmed',
     source: 'clinic'
   });
+
+  const clinic = db.findClinicById(req.clinicId);
+  sendWhatsAppMessage(
+    validPhone,
+    `تم تحديد موعدك في ${clinic.name}\nالتاريخ والوقت: ${formatFriendly(time)}` + (reason ? `\nالسبب: ${reason}` : '')
+  ).catch(() => {});
+
   res.json({ ...appt, patient });
 });
+
+const STATUS_MESSAGES = {
+  confirmed: (clinicName, time) => `تم تأكيد موعدك في ${clinicName}\nالتاريخ والوقت: ${formatFriendly(time)}`,
+  cancelled: (clinicName, time) => `تم إلغاء موعدك في ${clinicName} المحدد بتاريخ ${formatFriendly(time)}.\nيرجى التواصل مع العيادة لحجز موعد جديد إذا رغبت.`,
+  completed: null,
+  no_show: null
+};
 
 router.put('/:id', (req, res) => {
   const { status, time, notes, reason } = req.body;
@@ -40,9 +60,25 @@ router.put('/:id', (req, res) => {
   if (time) updates.time = time;
   if (notes !== undefined) updates.notes = notes;
   if (reason !== undefined) updates.reason = reason;
+
+  const before = db.listAppointments(req.clinicId).find(a => a.id === req.params.id);
   const updated = db.updateAppointment(req.params.id, req.clinicId, updates);
   if (!updated) return res.status(404).json({ error: 'الموعد غير موجود' });
-  res.json({ ...updated, patient: db.findPatientById(updated.patientId) });
+
+  const patient = db.findPatientById(updated.patientId);
+  const clinic = db.findClinicById(req.clinicId);
+
+  if (status && STATUS_MESSAGES[status] && patient && clinic) {
+    sendWhatsAppMessage(patient.phone, STATUS_MESSAGES[status](clinic.name, updated.time)).catch(() => {});
+  }
+  if (time && before && before.time !== time && patient && clinic) {
+    sendWhatsAppMessage(
+      patient.phone,
+      `تم تعديل موعدك في ${clinic.name}\nالموعد الجديد: ${formatFriendly(time)}`
+    ).catch(() => {});
+  }
+
+  res.json({ ...updated, patient });
 });
 
 router.delete('/:id', (req, res) => {

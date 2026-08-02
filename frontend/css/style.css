@@ -162,6 +162,13 @@ input:focus, select:focus, textarea:focus {
 .btn-ghost { background: transparent; color: var(--indigo-deep); border: 1.5px solid var(--indigo-deep); }
 .btn-small { padding: 6px 14px; font-size: 0.82rem; border-radius: 7px; }
 
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin-top: -8px;
+  margin-bottom: 6px;
+}
+
 .switch-mode {
   text-align: center;
   margin-top: 18px;

@@ -11,13 +11,10 @@ const PHONE_ID = process.env.WHATSAPP_PHONE_ID;
 const DEV_LOG = path.join(__dirname, '..', 'data', 'whatsapp-dev-log.txt');
 
 function normalizePhone(phone) {
-  // يفترض أرقام موريتانيا محلياً (يبدأ بـ 2/3/4) ويضيف مفتاح الدولة +222 إن لم يكن موجوداً
-  let p = phone.replace(/[^\d+]/g, '');
-  if (!p.startsWith('+')) {
-    if (p.startsWith('222')) p = '+' + p;
-    else p = '+222' + p;
-  }
-  return p;
+  // الأرقام تُتحقق منها وتُخزَّن كرقم موريتاني نظيف من 8 أرقام (بدون مفتاح الدولة) قبل الوصول هنا
+  let p = phone.replace(/[^\d]/g, '');
+  if (p.startsWith('222') && p.length === 11) p = p.slice(3);
+  return '+222' + p;
 }
 
 async function sendWhatsAppMessage(phoneRaw, message) {

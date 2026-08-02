@@ -6,6 +6,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const appointmentRoutes = require('./routes/appointments');
 const publicRoutes = require('./routes/public');
+const clinicRoutes = require('./routes/clinic');
 const { startScheduler, runReminderPass } = require('./services/scheduler');
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/clinic', clinicRoutes);
 
 // فحص يدوي لإرسال التذكيرات (مفيد للاختبار)
 app.post('/api/dev/run-reminders', async (req, res) => {
@@ -22,16 +24,10 @@ app.post('/api/dev/run-reminders', async (req, res) => {
   res.json({ sent: count });
 });
 
-// تقديم ملفات الـ frontend من نفس المجلد الرئيسي
-app.use(express.static(path.join(__dirname, 'frontend')));
-
-// توجيه أي مسار آخر للصفحة الرئيسية index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-});
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`الخادم يعمل على http://localhost:${PORT}`);
-    startScheduler();
+  console.log(`الخادم يعمل على http://localhost:${PORT}`);
+  startScheduler();
 });

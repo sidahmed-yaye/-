@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { toUTCDateForMath } = require('./utils');
 
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
@@ -36,6 +37,17 @@ function createClinic(clinic) {
   db.clinics.push(record);
   writeDB(db);
   return record;
+}
+function findClinicById(id) {
+  return readDB().clinics.find(c => c.id === id);
+}
+function updateClinic(id, updates) {
+  const db = readDB();
+  const idx = db.clinics.findIndex(c => c.id === id);
+  if (idx === -1) return null;
+  db.clinics[idx] = { ...db.clinics[idx], ...updates };
+  writeDB(db);
+  return db.clinics[idx];
 }
 
 // ---- Patients ----
@@ -103,14 +115,14 @@ function allDueReminders() {
   const from = now + 23 * 60 * 60 * 1000;
   const to = now + 25 * 60 * 60 * 1000;
   return db.appointments.filter(a => {
-    const t = new Date(a.time).getTime();
+    const t = toUTCDateForMath(a.time).getTime();
     return !a.reminderSent && a.status !== 'cancelled' && t >= from && t <= to;
   });
 }
 
 module.exports = {
   readDB, writeDB, newId,
-  findClinicBySlug, findClinicByUsername, createClinic,
+  findClinicBySlug, findClinicByUsername, findClinicById, createClinic, updateClinic,
   findOrCreatePatient, findPatientById,
   listAppointments, createAppointment, updateAppointment, deleteAppointment,
   allDueReminders

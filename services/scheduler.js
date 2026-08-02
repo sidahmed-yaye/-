@@ -1,11 +1,7 @@
 const cron = require('node-cron');
 const db = require('../db');
 const { sendWhatsAppMessage } = require('./whatsapp');
-
-function formatTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString('ar-MA', { dateStyle: 'medium', timeStyle: 'short' });
-}
+const { formatFriendly } = require('../utils');
 
 async function runReminderPass() {
   const due = db.allDueReminders();
@@ -15,7 +11,7 @@ async function runReminderPass() {
     if (!clinic || !patient) continue;
     const message =
       `تذكير بموعدك في ${clinic.name}\n` +
-      `الموعد: ${formatTime(appt.time)}\n` +
+      `الموعد: ${formatFriendly(appt.time)}\n` +
       (appt.reason ? `السبب: ${appt.reason}\n` : '') +
       `للإلغاء أو التعديل يرجى الاتصال بالعيادة.`;
     const result = await sendWhatsAppMessage(patient.phone, message);

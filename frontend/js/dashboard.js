@@ -3,13 +3,16 @@ let token = localStorage.getItem('token');
 let clinic = JSON.parse(localStorage.getItem('clinic') || 'null');
 let currentDate = new Date().toISOString().slice(0, 10);
 
-const STATUS_LABELS = {
-  pending: 'بانتظار التأكيد',
-  confirmed: 'مؤكد',
-  completed: 'تمت الزيارة',
-  cancelled: 'ملغى',
-  no_show: 'لم يحضر'
-};
+function statusLabel(status) {
+  const map = {
+    pending: 'statusPending',
+    confirmed: 'statusConfirmed',
+    completed: 'statusCompleted',
+    cancelled: 'statusCancelled',
+    no_show: 'statusNoShow'
+  };
+  return t(map[status] || status);
+}
 
 function showRegister() {
   document.getElementById('loginForm').closest('.card').classList.add('hidden');
@@ -98,23 +101,23 @@ function bookingUrl() {
 function copyBookingLink() {
   const url = bookingUrl();
   navigator.clipboard.writeText(url);
-  alert('تم نسخ الرابط: ' + url);
+  alert(t('linkCopied') + url);
 }
 
 async function loadAppointments() {
   const list = document.getElementById('apptList');
-  list.innerHTML = '<div class="empty-state">جارِ التحميل...</div>';
+  list.innerHTML = '<div class="empty-state">...</div>';
   try {
     const appts = await api(`/appointments?date=${currentDate}`);
     renderStats(appts);
     if (appts.length === 0) {
-      list.innerHTML = '<div class="empty-state"><div class="icon">📅</div>لا توجد مواعيد في هذا اليوم</div>';
+      list.innerHTML = `<div class="empty-state"><div class="icon">📅</div>${t('noAppts')}</div>`;
       return;
     }
     list.innerHTML = '';
     appts.forEach(a => list.appendChild(renderAppt(a)));
   } catch (err) {
-    list.innerHTML = `<div class="empty-state">تعذر تحميل المواعيد: ${err.message}</div>`;
+    list.innerHTML = `<div class="empty-state">${err.message}</div>`;
   }
 }
 
@@ -124,28 +127,33 @@ function renderStats(appts) {
   document.getElementById('statPending').textContent = appts.filter(a => a.status === 'pending').length;
 }
 
+// عرض الوقت مباشرة من النص الخام "YYYY-MM-DDTHH:MM" بدون تحويل عبر Date/المنطقة الزمنية
+function displayTime(rawTime) {
+  const timePart = rawTime.split('T')[1] || '';
+  return timePart.slice(0, 5);
+}
+
 function renderAppt(a) {
   const row = document.createElement('div');
   row.className = 'appt-row';
-  const time = new Date(a.time).toLocaleTimeString('ar-MA', { hour: '2-digit', minute: '2-digit' });
   row.innerHTML = `
-    <div class="appt-time">${time}</div>
+    <div class="appt-time">${displayTime(a.time)}</div>
     <div class="appt-info">
       <div class="p-name">${a.patient ? a.patient.name : '—'}</div>
       <div class="p-meta">${a.patient ? a.patient.phone : ''} ${a.reason ? '· ' + a.reason : ''}</div>
     </div>
-    <span class="badge ${a.status}">${STATUS_LABELS[a.status] || a.status}</span>
+    <span class="badge ${a.status}">${statusLabel(a.status)}</span>
     <div class="appt-actions"></div>
   `;
   const actions = row.querySelector('.appt-actions');
 
   if (a.status === 'pending') {
-    actions.appendChild(makeBtn('تأكيد', 'btn-accent', () => updateStatus(a.id, 'confirmed')));
+    actions.appendChild(makeBtn(t('confirm'), 'btn-accent', () => updateStatus(a.id, 'confirmed')));
   }
   if (a.status === 'pending' || a.status === 'confirmed') {
-    actions.appendChild(makeBtn('تمت الزيارة', 'btn-primary', () => updateStatus(a.id, 'completed')));
-    actions.appendChild(makeBtn('لم يحضر', 'btn-ghost', () => updateStatus(a.id, 'no_show')));
-    actions.appendChild(makeBtn('إلغاء', 'btn-ghost', () => updateStatus(a.id, 'cancelled')));
+    actions.appendChild(makeBtn(t('visited'), 'btn-primary', () => updateStatus(a.id, 'completed')));
+    actions.appendChild(makeBtn(t('noShow'), 'btn-ghost', () => updateStatus(a.id, 'no_show')));
+    actions.appendChild(makeBtn(t('cancel'), 'btn-ghost', () => updateStatus(a.id, 'cancelled')));
   }
   return row;
 }
@@ -164,31 +172,82 @@ async function updateStatus(id, status) {
     await api(`/appointments/${id}`, { method: 'PUT', body: JSON.stringify({ status }) });
     loadAppointments();
   } catch (err) {
-    alert('تعذر التحديث: ' + err.message);
+    alert(err.message);
   }
 }
 
 document.getElementById('addApptForm').addEventListener('submit', async e => {
   e.preventDefault();
   const successEl = document.getElementById('addSuccess');
+  const errEl = document.getElementById('addError');
+  errEl.style.display = 'none';
   try {
+    // نرسل قيمة datetime-local كما هي (YYYY-MM-DDTHH:MM) دون أي تحويل عبر Date/ISO
+    // لتفادي انزياح التاريخ الناتج عن اختلاف المنطقة الزمنية بين المتصفح والخادم
+    const rawTime = document.getElementById('apTime').value;
     await api('/appointments', {
       method: 'POST',
       body: JSON.stringify({
         patientName: document.getElementById('apName').value,
         patientPhone: document.getElementById('apPhone').value,
-        time: new Date(document.getElementById('apTime').value).toISOString(),
+        time: rawTime,
         reason: document.getElementById('apReason').value
       })
     });
     e.target.reset();
     successEl.style.display = 'block';
     setTimeout(() => successEl.style.display = 'none', 2500);
-    loadAppointments();
+    // إن كان الموعد المضاف في نفس اليوم المعروض، حدّث القائمة مباشرة
+    if (rawTime.startsWith(currentDate)) loadAppointments();
   } catch (err) {
-    alert('تعذر إضافة الموعد: ' + err.message);
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
   }
 });
+
+async function loadSettings() {
+  try {
+    const c = await api('/clinic/me');
+    document.getElementById('setName').value = c.name;
+    document.getElementById('setPhone').value = c.phone;
+    document.getElementById('setStart').value = c.workStart;
+    document.getElementById('setEnd').value = c.workEnd;
+    document.getElementById('setSlotMinutes').value = c.slotMinutes;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+document.getElementById('settingsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const successEl = document.getElementById('settingsSuccess');
+  const errEl = document.getElementById('settingsError');
+  errEl.style.display = 'none';
+  try {
+    const updated = await api('/clinic/me', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: document.getElementById('setName').value,
+        phone: document.getElementById('setPhone').value,
+        workStart: document.getElementById('setStart').value,
+        workEnd: document.getElementById('setEnd').value,
+        slotMinutes: document.getElementById('setSlotMinutes').value
+      })
+    });
+    clinic = { ...clinic, name: updated.name, phone: updated.phone };
+    localStorage.setItem('clinic', JSON.stringify(clinic));
+    document.getElementById('clinicNameLabel').textContent = clinic.name;
+    successEl.style.display = 'block';
+    setTimeout(() => successEl.style.display = 'none', 2500);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+});
+
+function onLangChange() {
+  loadAppointments();
+}
 
 function initDashboard() {
   document.getElementById('authView').classList.add('hidden');
@@ -201,6 +260,7 @@ function initDashboard() {
     loadAppointments();
   });
   loadAppointments();
+  loadSettings();
 }
 
 if (token && clinic) initDashboard();

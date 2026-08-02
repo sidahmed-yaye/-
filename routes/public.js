@@ -1,5 +1,7 @@
 const express = require('express');
 const db = require('../db');
+const { validateMauritanianPhone, formatFriendly } = require('../utils');
+const { sendWhatsAppMessage } = require('../services/whatsapp');
 
 const router = express.Router();
 
@@ -16,15 +18,18 @@ router.get('/:slug', (req, res) => {
   });
 });
 
+// توليد الأوقات المتاحة بحساب نصي بحت (بدون كائنات Date) لتفادي أي انزياح
+// بسبب اختلاف المنطقة الزمنية بين خادم الاستضافة والمستخدم — موريتانيا توقيتها ثابت UTC+0 دائماً
 function generateSlots(clinic, date) {
   const [sh, sm] = clinic.workStart.split(':').map(Number);
   const [eh, em] = clinic.workEnd.split(':').map(Number);
+  const startMinutes = sh * 60 + sm;
+  const endMinutes = eh * 60 + em;
   const slots = [];
-  let cur = new Date(`${date}T${clinic.workStart}:00`);
-  const end = new Date(`${date}T${clinic.workEnd}:00`);
-  while (cur < end) {
-    slots.push(new Date(cur).toISOString());
-    cur = new Date(cur.getTime() + clinic.slotMinutes * 60000);
+  for (let t = startMinutes; t < endMinutes; t += clinic.slotMinutes) {
+    const hh = String(Math.floor(t / 60)).padStart(2, '0');
+    const mm = String(t % 60).padStart(2, '0');
+    slots.push(`${date}T${hh}:${mm}`);
   }
   return slots;
 }
@@ -52,6 +57,10 @@ router.post('/:slug/book', (req, res) => {
   if (!patientName || !patientPhone || !time) {
     return res.status(400).json({ error: 'الاسم، الهاتف، والوقت مطلوبة' });
   }
+  const validPhone = validateMauritanianPhone(patientPhone);
+  if (!validPhone) {
+    return res.status(400).json({ error: 'رقم الهاتف يجب أن يكون رقماً موريتانياً صحيحاً (8 أرقام تبدأ بـ 2 أو 3 أو 4)' });
+  }
 
   const date = time.split('T')[0];
   const existing = db.listAppointments(clinic.id, { date })
@@ -61,7 +70,7 @@ router.post('/:slug/book', (req, res) => {
     return res.status(409).json({ error: 'هذا الموعد محجوز بالفعل، يرجى اختيار وقت آخر' });
   }
 
-  const patient = db.findOrCreatePatient(clinic.id, { name: patientName, phone: patientPhone });
+  const patient = db.findOrCreatePatient(clinic.id, { name: patientName, phone: validPhone });
   const appt = db.createAppointment({
     clinicId: clinic.id,
     patientId: patient.id,
@@ -70,6 +79,12 @@ router.post('/:slug/book', (req, res) => {
     status: 'pending',
     source: 'patient'
   });
+
+  sendWhatsAppMessage(
+    validPhone,
+    `تم استلام طلب حجزك في ${clinic.name}\nالتاريخ والوقت: ${formatFriendly(time)}\nسيصلك تأكيد من العيادة قريباً.`
+  ).catch(() => {});
+
   res.json({ success: true, appointment: appt });
 });
 

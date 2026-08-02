@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { signToken } = require('../middleware/auth');
+const { validateMauritanianPhone } = require('../utils');
 
 const router = express.Router();
 
@@ -21,6 +22,10 @@ router.post('/register', async (req, res) => {
   if (db.findClinicByUsername(username)) {
     return res.status(409).json({ error: 'اسم المستخدم مستخدم بالفعل' });
   }
+  const validPhone = validateMauritanianPhone(phone);
+  if (!validPhone) {
+    return res.status(400).json({ error: 'رقم الهاتف يجب أن يكون رقماً موريتانياً صحيحاً (8 أرقام تبدأ بـ 2 أو 3 أو 4)' });
+  }
   let baseSlug = slugify(name);
   let slug = baseSlug;
   let n = 1;
@@ -29,7 +34,7 @@ router.post('/register', async (req, res) => {
   }
   const passwordHash = await bcrypt.hash(password, 10);
   const clinic = db.createClinic({
-    name, phone, username, passwordHash, slug,
+    name, phone: validPhone, username, passwordHash, slug,
     workStart: workStart || '08:00',
     workEnd: workEnd || '17:00',
     slotMinutes: slotMinutes || 30
