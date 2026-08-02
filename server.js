@@ -22,10 +22,16 @@ app.post('/api/dev/run-reminders', async (req, res) => {
   res.json({ sent: count });
 });
 
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+// تقديم ملفات الـ frontend من نفس المجلد الرئيسي
+app.use(express.static(path.join(__dirname, 'frontend')));
+
+// توجيه أي مسار آخر للصفحة الرئيسية index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`الخادم يعمل على http://localhost:${PORT}`);
-  startScheduler();
+    console.log(`الخادم يعمل على http://localhost:${PORT}`);
+    startScheduler();
 });
