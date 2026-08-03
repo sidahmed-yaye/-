@@ -5,11 +5,16 @@ const { toUTCDateForMath } = require('./utils');
 
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
+function ensureDataDir() {
+  fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+}
+
 function defaultData() {
   return { clinics: [], patients: [], appointments: [] };
 }
 
 function readDB() {
+  ensureDataDir();
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify(defaultData(), null, 2));
   }
@@ -17,6 +22,7 @@ function readDB() {
 }
 
 function writeDB(data) {
+  ensureDataDir();
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -109,7 +115,6 @@ function findPatientById(id) {
 }
 
 function allDueReminders() {
-  // appointments 23-25 hours away, not yet reminded, not cancelled
   const db = readDB();
   const now = Date.now();
   const from = now + 23 * 60 * 60 * 1000;
