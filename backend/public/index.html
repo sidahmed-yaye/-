@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>موعدي — لوحة تحكم العيادة</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="authView" class="auth-shell">
+  <div class="diamond-rule" style="margin-bottom:24px;border-radius:6px;"></div>
+  <div style="text-align:left;margin-bottom:8px;">
+    <button id="langToggle" class="btn btn-ghost btn-small" onclick="toggleLang()">Français</button>
+  </div>
+  <h1 data-i18n="appName">موعدي</h1>
+  <p class="tagline" data-i18n="tagline">نظام حجز وتذكير للعيادات — بلا مواعيد ضائعة</p>
+
+  <div class="card">
+    <form id="loginForm">
+      <label data-i18n="username">اسم المستخدم</label>
+      <input type="text" id="loginUsername" required>
+      <label data-i18n="password">كلمة المرور</label>
+      <input type="password" id="loginPassword" required>
+      <button class="btn btn-primary btn-full" type="submit" data-i18n="login">تسجيل الدخول</button>
+      <div class="error-msg" id="loginError"></div>
+    </form>
+    <div class="switch-mode"><span data-i18n="noAccount">ليس لديك حساب؟</span> <a onclick="showRegister()" data-i18n="createClinic">أنشئ عيادتك الآن</a></div>
+  </div>
+
+  <form id="registerForm" class="card hidden">
+    <label data-i18n="clinicName">اسم العيادة</label>
+    <input type="text" id="regName" required placeholder="مثال: عيادة الأمل">
+    <label data-i18n="clinicPhone">رقم هاتف العيادة (لأغراض التذكيرات)</label>
+    <input type="tel" id="regPhone" required placeholder="مثال: 45678901" maxlength="8" pattern="[234][0-9]{7}">
+    <div class="field-hint" data-i18n="phoneHint">رقم موريتاني: 8 أرقام تبدأ بـ 2 أو 3 أو 4</div>
+    <label data-i18n="username">اسم المستخدم</label>
+    <input type="text" id="regUsername" required>
+    <label data-i18n="password">كلمة المرور</label>
+    <input type="password" id="regPassword" required minlength="6">
+    <label data-i18n="workStart">بداية الدوام</label>
+    <input type="time" id="regStart" value="08:00">
+    <label data-i18n="workEnd">نهاية الدوام</label>
+    <input type="time" id="regEnd" value="17:00">
+    <button class="btn btn-accent btn-full" type="submit" data-i18n="createAccount">إنشاء الحساب</button>
+    <div class="error-msg" id="regError"></div>
+    <div class="switch-mode"><span data-i18n="haveAccount">لديك حساب؟</span> <a onclick="showLogin()" data-i18n="login">سجل الدخول</a></div>
+  </form>
+</div>
+
+<div id="dashView" class="hidden">
+  <div class="diamond-rule"></div>
+  <div class="topbar">
+    <span class="brand"><span class="dot"></span> <span data-i18n="appName">موعدي</span></span>
+    <span class="clinic-name" id="clinicNameLabel"></span>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button id="langToggle2" class="logout" onclick="toggleLang()">Français</button>
+      <button class="logout" onclick="logout()" data-i18n="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:0.85rem;color:var(--ink-muted);" data-i18n="bookingLinkLabel">رابط الحجز الخاص بعيادتك، شاركه مع مرضاك:</div>
+        <div id="bookingLink" style="font-family:'Cairo',sans-serif;font-weight:700;color:var(--indigo-deep);"></div>
+      </div>
+      <button class="btn btn-ghost btn-small" onclick="copyBookingLink()" data-i18n="copyLink">نسخ الرابط</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl" data-i18n="statTotal">مواعيد اليوم</div></div>
+      <div class="stat-box"><div class="num" id="statConfirmed">0</div><div class="lbl" data-i18n="statConfirmed">مؤكدة</div></div>
+      <div class="stat-box"><div class="num" id="statPending">0</div><div class="lbl" data-i18n="statPending">بانتظار التأكيد</div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h2 data-i18n="todayAppts">مواعيد اليوم</h2>
+        <div class="date-nav">
+          <button onclick="shiftDate(-1)">‹</button>
+          <input type="date" id="dateInput" style="width:auto;">
+          <button onclick="shiftDate(1)">›</button>
+        </div>
+      </div>
+      <div id="apptList" class="appt-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><h2 data-i18n="addManual">إضافة موعد يدوياً</h2></div>
+      <form id="addApptForm">
+        <label data-i18n="patientName">اسم المريض</label>
+        <input type="text" id="apName" required>
+        <label data-i18n="patientPhone">رقم هاتف المريض (واتساب)</label>
+        <input type="tel" id="apPhone" required placeholder="مثال: 45678901" maxlength="8" pattern="[234][0-9]{7}">
+        <div class="field-hint" data-i18n="phoneHint">رقم موريتاني: 8 أرقام تبدأ بـ 2 أو 3 أو 4</div>
+        <label data-i18n="dateTime">التاريخ والوقت</label>
+        <input type="datetime-local" id="apTime" required>
+        <label data-i18n="reasonOptional">سبب الزيارة (اختياري)</label>
+        <input type="text" id="apReason">
+        <button class="btn btn-primary btn-full" type="submit" data-i18n="addAppt">إضافة الموعد</button>
+        <div class="success-msg" id="addSuccess" data-i18n="addSuccess">تمت إضافة الموعد بنجاح</div>
+        <div class="error-msg" id="addError"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><h2 data-i18n="settings">إعدادات العيادة</h2></div>
+      <form id="settingsForm">
+        <label data-i18n="clinicName">اسم العيادة</label>
+        <input type="text" id="setName" required>
+        <label data-i18n="clinicPhone">رقم هاتف العيادة (لأغراض التذكيرات)</label>
+        <input type="tel" id="setPhone" required maxlength="8" pattern="[234][0-9]{7}">
+        <div class="field-hint" data-i18n="phoneHint">رقم موريتاني: 8 أرقام تبدأ بـ 2 أو 3 أو 4</div>
+        <label data-i18n="workStart">بداية الدوام</label>
+        <input type="time" id="setStart" required>
+        <label data-i18n="workEnd">نهاية الدوام</label>
+        <input type="time" id="setEnd" required>
+        <label data-i18n="slotDuration">مدة كل موعد (بالدقائق)</label>
+        <input type="number" id="setSlotMinutes" min="5" step="5" required>
+        <button class="btn btn-primary btn-full" type="submit" data-i18n="saveSettings">حفظ التعديلات</button>
+        <div class="success-msg" id="settingsSuccess" data-i18n="settingsSaved">تم حفظ الإعدادات بنجاح</div>
+        <div class="error-msg" id="settingsError"></div>
+      </form>
+    </div>
+
+  </div>
+  <footer class="brand-footer" data-i18n="footer">موعدي — صُنع لعيادات موريتانيا 🇲🇷</footer>
+</div>
+
+<script src="js/i18n.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
