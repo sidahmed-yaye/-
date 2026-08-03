@@ -5,9 +5,24 @@ const { requireAdmin, signAdminToken } = require('../middleware/auth');
 const router = express.Router();
 
 // بيانات دخول الأدمن تُقرأ من متغيرات البيئة فقط (ليست في قاعدة البيانات) لأمان أعلى
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+router.post('/login', (req, res) => {
+    // قراءة المتغيرات مباشرة عند الطلب
+    const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+        return res.status(500).json({ 
+            error: 'حساب الأدمن غير مُهيّأ على الخادم (ADMIN_USERNAME/ADMIN_PASSWORD)' 
+        });
+    }
+
+    const { username, password } = req.body;
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+    }
+
+    res.json({ token: signAdminToken() });
+});
 router.post('/login', (req, res) => {
   if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
     return res.status(500).json({ error: 'حساب الأدمن غير مُهيَّأ على الخادم (ADMIN_USERNAME/ADMIN_PASSWORD)' });
