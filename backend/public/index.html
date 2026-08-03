@@ -25,8 +25,10 @@
       <button class="btn btn-primary btn-full" type="submit" data-i18n="login">تسجيل الدخول</button>
       <div class="error-msg" id="loginError"></div>
     </form>
-    <div class="switch-mode"><span data-i18n="noAccount">ليس لديك حساب؟</span> <a onclick="showRegister()" data-i18n="createClinic">أنشئ عيادتك الآن</a></div>
-  </div>
+    <div class="switch-mode">
+  <span data-i18n="noAccount">ليس لديك حساب؟</span>
+  <a href="#" onclick="showRegister()" data-i18n="createClinic">أنشئ عيادتك الآن</a>
+</div>
 
   <form id="registerForm" class="card hidden">
     <label data-i18n="clinicName">اسم العيادة</label>
@@ -44,7 +46,10 @@
     <input type="time" id="regEnd" value="17:00">
     <button class="btn btn-accent btn-full" type="submit" data-i18n="createAccount">إنشاء الحساب</button>
     <div class="error-msg" id="regError"></div>
-    <div class="switch-mode"><span data-i18n="haveAccount">لديك حساب؟</span> <a onclick="showLogin()" data-i18n="login">سجل الدخول</a></div>
+    <div class="switch-mode">
+  <span data-i18n="haveAccount">لديك حساب؟</span>
+  <a href="#" onclick="showLogin()" data-i18n="login">سجل الدخول</a>
+</div>
   </form>
 </div>
 
