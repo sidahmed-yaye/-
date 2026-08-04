@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ابحث عن عيادة — موعدي</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .search-hero {
+    background: var(--indigo-deep);
+    color: #fff;
+    padding: 34px 20px 44px;
+    text-align: center;
+  }
+  .search-hero h1 { margin: 0 0 6px; font-size: 1.5rem; }
+  .search-hero p { color: var(--ochre-light); margin: 0; font-size: 0.9rem; }
+  .search-box {
+    max-width: 640px;
+    margin: -28px auto 0;
+    padding: 0 20px;
+  }
+  .search-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+  .filters-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .filters-row select { flex: 1; min-width: 140px; }
+  .clinic-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .clinic-card .name { font-family: 'Cairo', sans-serif; font-weight: 800; color: var(--indigo-deep); font-size: 1.05rem; }
+  .clinic-card .meta { font-size: 0.85rem; color: var(--ink-muted); margin-top: 4px; }
+  .clinic-card .meta span { display: inline-block; margin-left: 10px; }
+</style>
+</head>
+<body>
+
+<div class="diamond-rule"></div>
+<div class="search-hero">
+  <div style="text-align:left;margin-bottom:10px;">
+    <button id="langToggle" class="btn btn-ghost btn-small" style="border-color:rgba(255,255,255,0.5);color:#fff;" onclick="toggleLang()">Français</button>
+  </div>
+  <h1 data-i18n="findClinicTitle">ابحث عن عيادة</h1>
+  <p data-i18n="findClinicTagline">اختر العيادة المناسبة واحجز موعدك مباشرة</p>
+</div>
+
+<div class="search-box">
+  <div class="search-card">
+    <input type="text" id="searchQuery" data-i18n-placeholder="searchByName" placeholder="ابحث بالاسم...">
+    <div class="filters-row">
+      <select id="filterSpecialty"><option value="" data-i18n="allSpecialties">كل التخصصات</option></select>
+      <select id="filterCity"><option value="" data-i18n="allCities">كل المدن</option></select>
+    </div>
+  </div>
+</div>
+
+<div class="container" style="max-width:640px;">
+  <div id="resultsList" style="margin-top:20px;"></div>
+</div>
+
+<footer class="brand-footer" data-i18n="poweredBy">مدعوم بواسطة موعدي</footer>
+
+<script src="js/i18n.js"></script>
+<script src="js/directory.js"></script>
+</body>
+</html>
