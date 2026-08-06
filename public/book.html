@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>احجز موعدك</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="diamond-rule"></div>
+<div class="booking-hero">
+  <div style="text-align:left;margin-bottom:10px;">
+    <button id="langToggle" class="btn btn-ghost btn-small" style="border-color:rgba(255,255,255,0.5);color:#fff;" onclick="toggleLang()">Français</button>
+  </div>
+  <h1 id="clinicName">...</h1>
+  <p id="clinicPhone"></p>
+</div>
+
+<div class="container" style="max-width:520px;">
+
+  <div id="bookingCard" class="card">
+    <label data-i18n="fullName">الاسم الكامل</label>
+    <input type="text" id="pName" required>
+    <label data-i18n="phoneForReminder">رقم الهاتف (واتساب — لإرسال تذكير قبل الموعد)</label>
+    <input type="tel" id="pPhone" required placeholder="مثال: 45678901" maxlength="8" pattern="[234][0-9]{7}">
+    <div class="field-hint" data-i18n="phoneHint">رقم موريتاني: 8 أرقام تبدأ بـ 2 أو 3 أو 4</div>
+    <label data-i18n="reasonOptional">سبب الزيارة (اختياري)</label>
+    <input type="text" id="pReason">
+    <label data-i18n="serviceLabel">الخدمة المطلوبة (اختياري)</label>
+    <input type="text" id="pService" placeholder="مثال: فحص عام">
+
+    <label data-i18n="chooseDate">اختر التاريخ</label>
+    <input type="date" id="pDate">
+
+    <label data-i18n="chooseTime">اختر الوقت المتاح</label>
+    <div id="slotsGrid" class="slots-grid"><div class="empty-state" data-i18n="selectDateFirst">اختر تاريخاً لعرض الأوقات المتاحة</div></div>
+
+    <div id="paymentSection" class="hidden" style="margin-top:16px;padding:14px;background:var(--ochre-light);border-radius:10px;">
+      <div style="font-weight:700;color:var(--indigo-deep);margin-bottom:8px;" data-i18n="paymentStepTitle">معلومات الدفع</div>
+      <div style="font-size:0.88rem;margin-bottom:4px;"><span data-i18n="paymentServiceLabel">خدمة الدفع</span>: <span id="payServiceName"></span></div>
+      <div style="font-size:0.88rem;margin-bottom:4px;"><span data-i18n="paymentNumberLabel">الرقم</span>: <span id="payNumber"></span></div>
+      <div id="payInstructions" style="font-size:0.85rem;color:var(--ink-muted);margin-bottom:10px;"></div>
+      <label data-i18n="uploadProofLabel">ارفع صورة إثبات الدفع</label>
+      <input type="file" id="pProofFile" accept="image/*">
+    </div>
+
+    <button class="btn btn-primary btn-full" id="confirmBtn" disabled onclick="confirmBooking()" data-i18n="confirmBooking">تأكيد الحجز</button>
+    <div class="error-msg" id="bookError"></div>
+  </div>
+
+  <div id="successCard" class="card hidden" style="text-align:center;">
+    <div style="font-size:2.2rem;">✅</div>
+    <h2 data-i18n="bookingSuccess">تم إرسال طلب حجزك</h2>
+    <p style="color:var(--ink-muted);" data-i18n="bookingSuccessDetail">ستصلك رسالة واتساب لتأكيد الموعد، وتذكير قبل موعدك بيوم واحد.</p>
+  </div>
+
+</div>
+<footer class="brand-footer" data-i18n="poweredBy">مدعوم بواسطة موعدي</footer>
+
+<script src="js/i18n.js"></script>
+<script src="js/booking.js"></script>
+</body>
+</html>
