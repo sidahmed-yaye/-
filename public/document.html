@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ملفك الطبي — موعدي</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="diamond-rule"></div>
+<div class="booking-hero">
+  <h1>ملفك الطبي</h1>
+  <p>مشارَك معك مباشرة من عيادتك</p>
+</div>
+
+<div class="container" style="max-width:520px;text-align:center;">
+  <div id="docViewer" class="card">
+    <div class="empty-state">جارِ التحميل...</div>
+  </div>
+</div>
+
+<footer class="brand-footer">مدعوم بواسطة موعدي</footer>
+
+<script>
+const params = new URLSearchParams(location.search);
+const token = params.get('token');
+const viewer = document.getElementById('docViewer');
+
+if (!token) {
+  viewer.innerHTML = '<div class="empty-state">رابط غير صالح</div>';
+} else {
+  const url = `/api/public/documents/view/${token}`;
+  fetch(url, { method: 'HEAD' }).then(res => {
+    if (!res.ok) {
+      viewer.innerHTML = '<div class="empty-state">تعذر إيجاد الملف، قد يكون الرابط منتهياً</div>';
+      return;
+    }
+    const contentType = res.headers.get('Content-Type') || '';
+    if (contentType.startsWith('image/')) {
+      viewer.innerHTML = `<img src="${url}" style="max-width:100%;border-radius:10px;">`;
+    } else {
+      viewer.innerHTML = `<a class="btn btn-primary btn-full" href="${url}" target="_blank">فتح الملف (PDF)</a>`;
+    }
+  }).catch(() => {
+    viewer.innerHTML = '<div class="empty-state">حدث خطأ أثناء تحميل الملف</div>';
+  });
+}
+</script>
+</body>
+</html>
